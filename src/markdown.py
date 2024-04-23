@@ -54,7 +54,7 @@ def block_is_unordered_list(block):
 def block_is_ordered_list(block):
     inc = 1
     for line in block.split("\n"):
-        if line[0:inc] != "." * inc:
+        if line[1] != ".":
             return False
     return True
 
@@ -66,7 +66,7 @@ def paragraph_to_html_node(block):
 
 def heading_to_html_node(block):
     heading = re.findall(r"^(#{1,6}) (.+)", block)
-    return ParentNode(tag=f"h{len(heading[0][0])}", value=text_to_html_children(heading[0][1]))
+    return ParentNode(tag=f"h{len(heading[0][0])}", children=text_to_html_children(heading[0][1]))
 
 def code_to_html_node(block):
     code = re.findall(r"^(```)(.*)(```)$", block)
@@ -78,10 +78,10 @@ def quote_to_html_node(block):
     return ParentNode(tag="blockquote", children=text_to_html_children(quote))
 
 def unordered_list_to_html_node(block):
-    return ParentNode(tag="ul", children=[ParentNode(tag="li", children=text_to_html_children(item.strip("*- "))) for item in block.split("\n")])
+    return ParentNode(tag="ul", children=[ParentNode(tag="li", children=text_to_html_children(item[2:])) for item in block.split("\n")])
 
 def ordered_list_to_html_node(block):
-    return ParentNode(tag="ol", children=[ParentNode(tag="li", children=text_to_html_children(item.strip(". "))) for item in block.split("\n")])
+    return ParentNode(tag="ol", children=[ParentNode(tag="li", children=text_to_html_children(item[3:])) for item in block.split("\n")])
 
 def block_to_html_node(block):
     converter = {
@@ -97,3 +97,10 @@ def block_to_html_node(block):
 def markdown_to_html_node(markdown):
     blocks = markdown_to_blocks(markdown)
     return ParentNode(tag="div", children=[block_to_html_node(block) for block in blocks])
+
+def extract_title(md):
+    lines = md.split("\n")
+    for line in lines:
+        if line.startswith("# "):
+            return line[2:]
+    raise ValueError("No title found")
